@@ -93,6 +93,12 @@ namespace PrintCalc
         private Button _btnAddFilamentTop;
         private Button _btnSaveFilament;
         private Button _btnCancelFilament;
+        private TextBlock _lblHours;
+        private TextBlock _lblMinutes;
+        private TextBlock _lblUnitGrams;
+        private Button _btnGoToFilaments;
+        private List<Tuple<Button, string>> _weightChipsList = new List<Tuple<Button, string>>();
+        private List<Tuple<Button, string>> _timeChipsList = new List<Tuple<Button, string>>();
 
         // Currency buttons
         private List<Button> _currencyButtons = new List<Button>();
@@ -365,11 +371,11 @@ namespace PrintCalc
             var badgesRow = new StackPanel { Orientation = Orientation.Horizontal };
             _lblFilamentDensity = CreateBadge("1.24 g/cm³", AccentCyan);
             _lblFilamentPrice = CreateBadge("20.00 / kg", AccentGreen);
-            var btnGoToFilaments = CreateLinkButton(Loc.T("ManageFilaments") + " →", () => SwitchTab(false));
+            _btnGoToFilaments = CreateLinkButton(Loc.T("ManageFilaments") + " →", () => SwitchTab(false));
 
             badgesRow.Children.Add(_lblFilamentDensity);
             badgesRow.Children.Add(_lblFilamentPrice);
-            badgesRow.Children.Add(btnGoToFilaments);
+            badgesRow.Children.Add(_btnGoToFilaments);
             filCardStack.Children.Add(badgesRow);
 
             filCard.Child = filCardStack;
@@ -401,7 +407,7 @@ namespace PrintCalc
             weightRow.Children.Add(_txtWeight);
             Grid.SetColumn(_txtWeight, 0);
 
-            var unitGrams = new TextBlock
+            _lblUnitGrams = new TextBlock
             {
                 Text = Loc.T("GramsUnit"),
                 FontSize = 14,
@@ -410,18 +416,21 @@ namespace PrintCalc
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(8, 0, 4, 0)
             };
-            weightRow.Children.Add(unitGrams);
-            Grid.SetColumn(unitGrams, 1);
+            weightRow.Children.Add(_lblUnitGrams);
+            Grid.SetColumn(_lblUnitGrams, 1);
             weightStack.Children.Add(weightRow);
 
+            _weightChipsList.Clear();
             var weightChips = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
             string[] weights = new string[] { "25", "50", "100", "200", "350", "500" };
             foreach (var w in weights)
             {
                 var val = w;
-                weightChips.Children.Add(CreateChip(val + " " + Loc.T("GramsUnit"), () => {
+                var btn = CreateChip(val + " " + Loc.T("GramsUnit"), () => {
                     _txtWeight.Text = val;
-                }));
+                });
+                _weightChipsList.Add(Tuple.Create(btn, val));
+                weightChips.Children.Add(btn);
             }
             weightStack.Children.Add(weightChips);
             weightCard.Child = weightStack;
@@ -450,28 +459,34 @@ namespace PrintCalc
             timeRow.Children.Add(_txtHours);
             Grid.SetColumn(_txtHours, 0);
 
-            var lblH = new TextBlock { Text = Loc.T("HoursLabel"), FontSize = 12, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
-            timeRow.Children.Add(lblH);
-            Grid.SetColumn(lblH, 1);
+            _lblHours = new TextBlock { Text = Loc.T("HoursLabel"), FontSize = 12, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
+            timeRow.Children.Add(_lblHours);
+            Grid.SetColumn(_lblHours, 1);
 
             _txtMinutes = CreateStyledTextBox("45");
             _txtMinutes.TextChanged += (s, e) => Recalculate();
             timeRow.Children.Add(_txtMinutes);
             Grid.SetColumn(_txtMinutes, 3);
 
-            var lblM = new TextBlock { Text = Loc.T("MinutesLabel"), FontSize = 12, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
-            timeRow.Children.Add(lblM);
-            Grid.SetColumn(lblM, 4);
+            _lblMinutes = new TextBlock { Text = Loc.T("MinutesLabel"), FontSize = 12, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
+            timeRow.Children.Add(_lblMinutes);
+            Grid.SetColumn(_lblMinutes, 4);
 
             timeStack.Children.Add(timeRow);
 
+            _timeChipsList.Clear();
             var timeChips = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
-            timeChips.Children.Add(CreateChip("1 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "1"; _txtMinutes.Text = "0"; }));
-            timeChips.Children.Add(CreateChip("2 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "2"; _txtMinutes.Text = "0"; }));
-            timeChips.Children.Add(CreateChip("4 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "4"; _txtMinutes.Text = "0"; }));
-            timeChips.Children.Add(CreateChip("6 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "6"; _txtMinutes.Text = "0"; }));
-            timeChips.Children.Add(CreateChip("10 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "10"; _txtMinutes.Text = "0"; }));
-            timeChips.Children.Add(CreateChip("24 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "24"; _txtMinutes.Text = "0"; }));
+            string[] timeValues = new string[] { "1", "2", "4", "6", "10", "24" };
+            foreach (var t in timeValues)
+            {
+                var val = t;
+                var btn = CreateChip(val + " " + Loc.T("HoursLabel"), () => {
+                    _txtHours.Text = val;
+                    _txtMinutes.Text = "0";
+                });
+                _timeChipsList.Add(Tuple.Create(btn, val));
+                timeChips.Children.Add(btn);
+            }
             timeStack.Children.Add(timeChips);
             timeCard.Child = timeStack;
             timePanel.Children.Add(timeCard);
@@ -1169,6 +1184,27 @@ namespace PrintCalc
             if (_lblInputHourlyRate != null) _lblInputHourlyRate.Text = "4. " + Loc.T("HourlyRateLabel");
             if (_lblInputHourlyHint != null) _lblInputHourlyHint.Text = Loc.T("HourlyRateHint");
             if (_lblInputMarkup != null) _lblInputMarkup.Text = "5. " + Loc.T("MarkupLabel");
+
+            if (_lblHours != null) _lblHours.Text = Loc.T("HoursLabel");
+            if (_lblMinutes != null) _lblMinutes.Text = Loc.T("MinutesLabel");
+            if (_lblUnitGrams != null) _lblUnitGrams.Text = Loc.T("GramsUnit");
+            if (_btnGoToFilaments != null) _btnGoToFilaments.Content = Loc.T("ManageFilaments") + " →";
+
+            if (_timeChipsList != null)
+            {
+                foreach (var item in _timeChipsList)
+                {
+                    item.Item1.Content = string.Format("{0} {1}", item.Item2, Loc.T("HoursLabel"));
+                }
+            }
+
+            if (_weightChipsList != null)
+            {
+                foreach (var item in _weightChipsList)
+                {
+                    item.Item1.Content = string.Format("{0} {1}", item.Item2, Loc.T("GramsUnit"));
+                }
+            }
 
             if (_lblSummaryHeader != null) _lblSummaryHeader.Text = Loc.T("SummaryHeader");
             if (_lblFilamentCostHeader != null) _lblFilamentCostHeader.Text = Loc.T("FilamentCost");
