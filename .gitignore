@@ -1,0 +1,6 @@
+# User-generated configs (auto-generated on first run if missing)
+*.suo
+*.user
+bin/
+obj/
+*.tmp
