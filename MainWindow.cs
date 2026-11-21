@@ -123,10 +123,10 @@ namespace PrintCalc
         private void InitializeWindow()
         {
             this.Title = Loc.T("AppTitle");
-            this.Width = 1100;
-            this.Height = 780;
-            this.MinWidth = 950;
-            this.MinHeight = 650;
+            this.Width = 1140;
+            this.Height = 700;
+            this.MinWidth = 980;
+            this.MinHeight = 580;
             this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             this.Background = BgWindow;
             this.Foreground = TextPrimary;
@@ -325,16 +325,16 @@ namespace PrintCalc
 
         private Grid BuildCalculatorView()
         {
-            var grid = new Grid { Margin = new Thickness(24) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.15, GridUnitType.Star) }); // Inputs
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) }); // Spacing
+            var grid = new Grid { Margin = new Thickness(20, 12, 20, 14) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.35, GridUnitType.Star) }); // Inputs
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) }); // Spacing
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.0, GridUnitType.Star) }); // Summary card
 
-            // LEFT COLUMN: INPUTS (Inside ScrollViewer)
-            var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-            var inputStack = new StackPanel { Margin = new Thickness(0, 0, 10, 0) };
+            // LEFT COLUMN: INPUTS (Wrapped in auto-scrollviewer only if window is shrunk)
+            var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            var inputStack = new StackPanel { Margin = new Thickness(0, 0, 6, 0) };
 
-            // 1. FILAMENT SELECTION
+            // 1. FILAMENT SELECTION (Full Width at Top)
             _lblInputFilament = CreateSectionHeader("1. " + Loc.T("FilamentLabel"));
             inputStack.Children.Add(_lblInputFilament);
 
@@ -347,8 +347,8 @@ namespace PrintCalc
                 Foreground = Brushes.White,
                 BorderBrush = BorderColor,
                 FontSize = 14,
-                Padding = new Thickness(12, 10, 12, 10),
-                Margin = new Thickness(0, 0, 0, 10)
+                Padding = new Thickness(12, 9, 12, 9),
+                Margin = new Thickness(0, 0, 0, 8)
             };
             _comboFilaments.SelectionChanged += (s, e) => {
                 if (_comboFilaments.SelectedItem is Filament)
@@ -375,9 +375,19 @@ namespace PrintCalc
             filCard.Child = filCardStack;
             inputStack.Children.Add(filCard);
 
-            // 2. WEIGHT INPUT
+            // 2-COLUMN INPUTS GRID FOR REMAINING 4 SECTIONS
+            var inputsGrid = new Grid();
+            inputsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            inputsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            inputsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            inputsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            inputsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // 2. WEIGHT INPUT (Col 0, Row 0)
+            var weightPanel = new StackPanel();
             _lblInputWeight = CreateSectionHeader("2. " + Loc.T("WeightLabel"));
-            inputStack.Children.Add(_lblInputWeight);
+            weightPanel.Children.Add(_lblInputWeight);
 
             var weightCard = CreateCard();
             var weightStack = new StackPanel();
@@ -394,18 +404,17 @@ namespace PrintCalc
             var unitGrams = new TextBlock
             {
                 Text = Loc.T("GramsUnit"),
-                FontSize = 15,
+                FontSize = 14,
                 FontWeight = FontWeights.Bold,
                 Foreground = TextSecondary,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(10, 0, 4, 0)
+                Margin = new Thickness(8, 0, 4, 0)
             };
             weightRow.Children.Add(unitGrams);
             Grid.SetColumn(unitGrams, 1);
             weightStack.Children.Add(weightRow);
 
-            // Quick weight chips
-            var weightChips = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+            var weightChips = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
             string[] weights = new string[] { "25", "50", "100", "200", "350", "500" };
             foreach (var w in weights)
             {
@@ -415,13 +424,16 @@ namespace PrintCalc
                 }));
             }
             weightStack.Children.Add(weightChips);
-
             weightCard.Child = weightStack;
-            inputStack.Children.Add(weightCard);
+            weightPanel.Children.Add(weightCard);
+            inputsGrid.Children.Add(weightPanel);
+            Grid.SetColumn(weightPanel, 0);
+            Grid.SetRow(weightPanel, 0);
 
-            // 3. PRINT TIME INPUT
+            // 3. PRINT TIME INPUT (Col 2, Row 0)
+            var timePanel = new StackPanel();
             _lblInputTime = CreateSectionHeader("3. " + Loc.T("PrintTimeLabel"));
-            inputStack.Children.Add(_lblInputTime);
+            timePanel.Children.Add(_lblInputTime);
 
             var timeCard = CreateCard();
             var timeStack = new StackPanel();
@@ -429,7 +441,7 @@ namespace PrintCalc
             var timeRow = new Grid();
             timeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             timeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            timeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+            timeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
             timeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             timeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -438,7 +450,7 @@ namespace PrintCalc
             timeRow.Children.Add(_txtHours);
             Grid.SetColumn(_txtHours, 0);
 
-            var lblH = new TextBlock { Text = Loc.T("HoursLabel"), FontSize = 13, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+            var lblH = new TextBlock { Text = Loc.T("HoursLabel"), FontSize = 12, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
             timeRow.Children.Add(lblH);
             Grid.SetColumn(lblH, 1);
 
@@ -447,14 +459,13 @@ namespace PrintCalc
             timeRow.Children.Add(_txtMinutes);
             Grid.SetColumn(_txtMinutes, 3);
 
-            var lblM = new TextBlock { Text = Loc.T("MinutesLabel"), FontSize = 13, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+            var lblM = new TextBlock { Text = Loc.T("MinutesLabel"), FontSize = 12, Foreground = TextSecondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
             timeRow.Children.Add(lblM);
             Grid.SetColumn(lblM, 4);
 
             timeStack.Children.Add(timeRow);
 
-            // Quick time chips
-            var timeChips = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+            var timeChips = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
             timeChips.Children.Add(CreateChip("1 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "1"; _txtMinutes.Text = "0"; }));
             timeChips.Children.Add(CreateChip("2 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "2"; _txtMinutes.Text = "0"; }));
             timeChips.Children.Add(CreateChip("4 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "4"; _txtMinutes.Text = "0"; }));
@@ -462,13 +473,16 @@ namespace PrintCalc
             timeChips.Children.Add(CreateChip("10 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "10"; _txtMinutes.Text = "0"; }));
             timeChips.Children.Add(CreateChip("24 " + Loc.T("HoursLabel"), () => { _txtHours.Text = "24"; _txtMinutes.Text = "0"; }));
             timeStack.Children.Add(timeChips);
-
             timeCard.Child = timeStack;
-            inputStack.Children.Add(timeCard);
+            timePanel.Children.Add(timeCard);
+            inputsGrid.Children.Add(timePanel);
+            Grid.SetColumn(timePanel, 2);
+            Grid.SetRow(timePanel, 0);
 
-            // 4. PRINTER HOURLY RATE
+            // 4. PRINTER HOURLY RATE (Col 0, Row 1)
+            var ratePanel = new StackPanel();
             _lblInputHourlyRate = CreateSectionHeader("4. " + Loc.T("HourlyRateLabel"));
-            inputStack.Children.Add(_lblInputHourlyRate);
+            ratePanel.Children.Add(_lblInputHourlyRate);
 
             var rateCard = CreateCard();
             var rateStack = new StackPanel();
@@ -488,13 +502,13 @@ namespace PrintCalc
             _lblInputHourlyHint = new TextBlock
             {
                 Text = Loc.T("HourlyRateHint"),
-                FontSize = 11,
+                FontSize = 10,
                 Foreground = TextMuted,
-                Margin = new Thickness(2, 4, 0, 6)
+                Margin = new Thickness(2, 3, 0, 4)
             };
             rateStack.Children.Add(_lblInputHourlyHint);
 
-            var rateChips = new StackPanel { Orientation = Orientation.Horizontal };
+            var rateChips = new WrapPanel();
             string[] rates = new string[] { "1.50", "2.00", "2.50", "3.00", "4.00", "5.00" };
             foreach (var r in rates)
             {
@@ -504,13 +518,16 @@ namespace PrintCalc
                 }));
             }
             rateStack.Children.Add(rateChips);
-
             rateCard.Child = rateStack;
-            inputStack.Children.Add(rateCard);
+            ratePanel.Children.Add(rateCard);
+            inputsGrid.Children.Add(ratePanel);
+            Grid.SetColumn(ratePanel, 0);
+            Grid.SetRow(ratePanel, 1);
 
-            // 5. MARKUP PERCENTAGE
+            // 5. MARKUP PERCENTAGE (Col 2, Row 1)
+            var markupPanel = new StackPanel();
             _lblInputMarkup = CreateSectionHeader("5. " + Loc.T("MarkupLabel"));
-            inputStack.Children.Add(_lblInputMarkup);
+            markupPanel.Children.Add(_lblInputMarkup);
 
             var markupCard = CreateCard();
             var markupStack = new StackPanel();
@@ -527,7 +544,7 @@ namespace PrintCalc
             };
             markupStack.Children.Add(_txtMarkup);
 
-            var markupChips = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 0) };
+            var markupChips = new WrapPanel { Margin = new Thickness(0, 6, 0, 0) };
             string[] markups = new string[] { "0%", "25%", "40%", "50%", "75%", "100%", "150%" };
             foreach (var m in markups)
             {
@@ -537,9 +554,13 @@ namespace PrintCalc
                 }));
             }
             markupStack.Children.Add(markupChips);
-
             markupCard.Child = markupStack;
-            inputStack.Children.Add(markupCard);
+            markupPanel.Children.Add(markupCard);
+            inputsGrid.Children.Add(markupPanel);
+            Grid.SetColumn(markupPanel, 2);
+            Grid.SetRow(markupPanel, 1);
+
+            inputStack.Children.Add(inputsGrid);
 
             scroll.Content = inputStack;
             grid.Children.Add(scroll);
@@ -560,15 +581,15 @@ namespace PrintCalc
                 Background = BgCard,
                 BorderBrush = new SolidColorBrush(Color.FromArgb(160, 16, 185, 129)), // Emerald glow border
                 BorderThickness = new Thickness(1.5),
-                CornerRadius = new CornerRadius(16),
-                Padding = new Thickness(24),
+                CornerRadius = new CornerRadius(14),
+                Padding = new Thickness(18, 14, 18, 14),
                 VerticalAlignment = VerticalAlignment.Stretch
             };
             card.Effect = new DropShadowEffect
             {
                 Color = Color.FromRgb(16, 185, 129),
                 Opacity = 0.15,
-                BlurRadius = 30,
+                BlurRadius = 24,
                 ShadowDepth = 0
             };
 
@@ -578,10 +599,10 @@ namespace PrintCalc
             _lblSummaryHeader = new TextBlock
             {
                 Text = Loc.T("SummaryHeader"),
-                FontSize = 20,
+                FontSize = 18,
                 FontWeight = FontWeights.Bold,
                 Foreground = TextPrimary,
-                Margin = new Thickness(0, 0, 0, 16)
+                Margin = new Thickness(0, 0, 0, 10)
             };
             stack.Children.Add(_lblSummaryHeader);
 
@@ -610,9 +631,9 @@ namespace PrintCalc
             // Divider 2
             listStack.Children.Add(CreateCardDivider());
 
-            // Total Excl. VAT (Point 8 from user)
-            _lblTotalExclVatHeader = new TextBlock { Text = Loc.T("TotalExclVat"), FontWeight = FontWeights.Bold, FontSize = 14 };
-            _resTotalExclVat = new TextBlock { Text = "0.00", FontWeight = FontWeights.Bold, FontSize = 19, Foreground = AccentCyan };
+            // Total Excl. VAT
+            _lblTotalExclVatHeader = new TextBlock { Text = Loc.T("TotalExclVat"), FontWeight = FontWeights.Bold, FontSize = 13 };
+            _resTotalExclVat = new TextBlock { Text = "0.00", FontWeight = FontWeights.Bold, FontSize = 17, Foreground = AccentCyan };
             listStack.Children.Add(CreateSummaryRow(_lblTotalExclVatHeader, _resTotalExclVat, TextPrimary, AccentCyan));
 
             // VAT 20%
@@ -622,33 +643,33 @@ namespace PrintCalc
 
             stack.Children.Add(listStack);
 
-            // BIG FINAL STANDOUT BOX: TOTAL WITH VAT 20% (Point 9 from user)
+            // STANDOUT BOX: TOTAL WITH VAT 20%
             var totalWithVatBox = new Border
             {
                 Background = new LinearGradientBrush(Color.FromArgb(40, 16, 185, 129), Color.FromArgb(20, 6, 182, 212), 45),
                 BorderBrush = AccentGreen,
                 BorderThickness = new Thickness(1.5),
-                CornerRadius = new CornerRadius(12),
-                Padding = new Thickness(16),
-                Margin = new Thickness(0, 20, 0, 16)
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(12, 8, 12, 8),
+                Margin = new Thickness(0, 10, 0, 8)
             };
             var totalStack = new StackPanel();
             _lblTotalInclVatHeader = new TextBlock
             {
                 Text = Loc.T("TotalInclVat"),
-                FontSize = 12,
+                FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 Foreground = AccentGreen,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
             _resTotalInclVat = new TextBlock
             {
-                Text = "0.00 $",
-                FontSize = 32,
+                Text = "0.00 €",
+                FontSize = 26,
                 FontWeight = FontWeights.ExtraBold,
                 Foreground = Brushes.White,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 4, 0, 0)
+                Margin = new Thickness(0, 2, 0, 0)
             };
             totalStack.Children.Add(_lblTotalInclVatHeader);
             totalStack.Children.Add(_resTotalInclVat);
@@ -663,18 +684,18 @@ namespace PrintCalc
                 Foreground = TextMuted,
                 TextWrapping = TextWrapping.Wrap,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 16)
+                Margin = new Thickness(0, 0, 0, 8)
             };
             stack.Children.Add(_lblFormulaNote);
 
             // Action Buttons
             _btnCopyQuote = CreatePrimaryButton("📋 " + Loc.T("BtnCopy"), CopyQuoteToClipboard);
-            _btnCopyQuote.Height = 44;
-            _btnCopyQuote.Margin = new Thickness(0, 0, 0, 10);
+            _btnCopyQuote.Height = 38;
+            _btnCopyQuote.Margin = new Thickness(0, 0, 0, 6);
             stack.Children.Add(_btnCopyQuote);
 
             _btnResetInputs = CreateSecondaryButton("↺ " + Loc.T("BtnReset"), ResetInputs);
-            _btnResetInputs.Height = 36;
+            _btnResetInputs.Height = 32;
             stack.Children.Add(_btnResetInputs);
 
             card.Child = stack;
@@ -683,7 +704,7 @@ namespace PrintCalc
 
         private Grid BuildFilamentsView()
         {
-            var grid = new Grid { Margin = new Thickness(24) };
+            var grid = new Grid { Margin = new Thickness(20, 14, 20, 14) };
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.3, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.0, GridUnitType.Star) });
@@ -691,14 +712,14 @@ namespace PrintCalc
             // LEFT: Filaments List
             var leftStack = new StackPanel();
 
-            var topRow = new Grid { Margin = new Thickness(0, 0, 0, 16) };
+            var topRow = new Grid { Margin = new Thickness(0, 0, 0, 12) };
             topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             var listTitle = new TextBlock
             {
                 Text = Loc.T("FilamentsTab"),
-                FontSize = 20,
+                FontSize = 18,
                 FontWeight = FontWeights.Bold,
                 Foreground = TextPrimary,
                 VerticalAlignment = VerticalAlignment.Center
@@ -713,7 +734,7 @@ namespace PrintCalc
 
             leftStack.Children.Add(topRow);
 
-            var scroll = new ScrollViewer { Height = 560, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            var scroll = new ScrollViewer { MaxHeight = 490, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
             _filamentsListPanel = new StackPanel();
             scroll.Content = _filamentsListPanel;
             leftStack.Children.Add(scroll);
@@ -1200,8 +1221,8 @@ namespace PrintCalc
                 BorderBrush = BorderColor,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(12),
-                Padding = new Thickness(16),
-                Margin = new Thickness(0, 0, 0, 16)
+                Padding = new Thickness(12, 10, 12, 10),
+                Margin = new Thickness(0, 0, 0, 8)
             };
         }
 
@@ -1210,10 +1231,10 @@ namespace PrintCalc
             return new TextBlock
             {
                 Text = text,
-                FontSize = 14,
+                FontSize = 13,
                 FontWeight = FontWeights.Bold,
                 Foreground = TextPrimary,
-                Margin = new Thickness(0, 4, 0, 8)
+                Margin = new Thickness(0, 2, 0, 5)
             };
         }
 
@@ -1392,7 +1413,7 @@ namespace PrintCalc
 
         private Grid CreateSummaryRow(TextBlock titleBlock, TextBlock valBlock, SolidColorBrush titleFg, SolidColorBrush valFg)
         {
-            var g = new Grid { Margin = new Thickness(0, 5, 0, 5) };
+            var g = new Grid { Margin = new Thickness(0, 3, 0, 3) };
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
@@ -1414,7 +1435,7 @@ namespace PrintCalc
             {
                 Height = 1,
                 Background = BorderColor,
-                Margin = new Thickness(0, 8, 0, 8)
+                Margin = new Thickness(0, 5, 0, 5)
             };
         }
     }
